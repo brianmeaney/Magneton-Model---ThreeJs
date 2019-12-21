@@ -1,0 +1,317 @@
+<html>
+ <head>
+  
+  <script src="three.js"></script>
+  <script src="OrbitControls.js"></script>
+  <script>
+    'use strict'
+    // I created the Pokemon Magneton and a Pokeball with
+    // some animation of the Pokeball opening and Magneton coming out
+    // 
+    // I created each object at the origin and then grouped objects to move them around
+    var renderer, camera, scene, controls;
+    var pivot;
+    var magneton;
+    function draw() {
+      var c = document.getElementById("canvas");
+      renderer = new THREE.WebGLRenderer({ canvas: c, antialias: true });
+
+      scene = new THREE.Scene();
+
+      var fov = 75;
+      var aspect = 600/600;
+      var near = 0.1;
+      var far = 1000;
+      camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
+      camera.position.z = 100;
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+    
+      //setting up lights, one from front, one from the back
+      var light = new THREE.PointLight(0xffffff, 1);
+      light.position.set(30, 0, 90);
+      scene.add(light);
+      var light2 = new THREE.PointLight(0xffffff, 0.75);
+      light2.position.set(20,0,-90);
+      light2.rotateY(Math.PI/2);
+      scene.add(light2);
+      // ****ambient light below, comment out above code and use this to see objects in ambient light
+      // var ambLight = new THREE.AmbientLight(0xffffff);
+      // scene.add(ambLight);
+
+      //creating top half of pokeball
+      var hemi = new THREE.SphereGeometry(10, 32, 32, 0, 2*Math.PI, 0, 0.5*Math.PI);
+      var materialRed = new THREE.MeshLambertMaterial( {color: 0xF00000} );
+      var redBall = new THREE.Mesh(hemi, materialRed);
+
+      //creating bottom half of pokeball
+      var hemi2 = new THREE.SphereGeometry(10, 32, 32, 0, 2*Math.PI, 0, 0.5*Math.PI);
+      var materialWhite = new THREE.MeshLambertMaterial( {color: 0xF0F0F0} );
+      var whiteBall = new THREE.Mesh(hemi2, materialWhite);
+      whiteBall.rotation.x = Math.PI;
+
+      //creating black line strip, seperating two halfs of ball
+      var doughnut = new THREE.TorusGeometry( 9.4, 1, 6, 32);
+      var materialBlack = new THREE.MeshLambertMaterial({color: 0x222224});
+      var ballLineStrip = new THREE.Mesh(doughnut, materialBlack);
+      ballLineStrip.rotation.x = Math.PI / 2;
+      ballLineStrip.position.set(0,0,0);
+
+      //black and white buttons on centre of ball 
+      var circleGeo = new THREE.CircleGeometry(3, 32);
+      var blackButton = new THREE.Mesh(circleGeo, materialBlack);
+      blackButton.position.set(0,0,10);
+      var innerCircleGeo = new THREE.CircleGeometry(1.4, 32);
+      var whiteButton = new THREE.Mesh(innerCircleGeo, materialWhite);
+      whiteButton.position.set(0,0,10.7);
+
+      // grouping ball components
+      var pokeball = new THREE.Group();
+      pokeball.add(redBall);
+      pokeball.add(whiteBall);
+      pokeball.add(ballLineStrip);
+      pokeball.add(blackButton);
+      pokeball.add(whiteButton);
+
+      //pivot for the top half of the ball to rotate on, when opening
+      pivot = new THREE.Object3D();
+      // position to rotate on
+      pivot.position.set(0,1,-5);
+      pivot.add(redBall);
+      pokeball.add(pivot);
+      redBall.position.set(0,-1,5);
+      pokeball.position.y = -20;
+      scene.add(pokeball);
+
+      //create silver ball with shiny surface
+      var metalGeo = new THREE.SphereGeometry(10, 32, 32);
+      var metalSurf = new THREE.MeshPhongMaterial({color:0xbfc1c2, shininess:100});
+      var metalBall = new THREE.Mesh(metalGeo, metalSurf);
+
+      // white part of the eye
+      var eyeballGeo = new THREE.SphereGeometry(10.02, 32, 32, 0, 6.3, 0, 0.45);
+      var eyeballMaterial = new THREE.MeshLambertMaterial({color:0xF5F5F5})
+      var eyeball = new THREE.Mesh(eyeballGeo, eyeballMaterial);
+      eyeball.position.z = 0;
+      eyeball.rotation.x = Math.PI / 2;
+
+      // black pupil of the eye
+      var pupilGeo = new THREE.CircleGeometry(0.5, 30);
+      var pupil = new THREE.Mesh(pupilGeo, materialBlack);
+      pupil.position.z = 10.1;
+
+      // cylinder part of screw
+      var screwGeo = new THREE.CylinderGeometry(1.3,1.3,4,20);
+      var screwMaterial = new THREE.MeshPhongMaterial({color:0x969a9b, shininess:100});
+      var screw = new THREE.Mesh(screwGeo, screwMaterial);
+      screw.position.y = 11.8;
+
+      // thread of screw made from torus shape, inserted at an angle
+      var threadGeo = new THREE.TorusGeometry( 0.8, 1, 3, 32);
+      var screwThread = new THREE.Mesh(threadGeo, screwMaterial);
+      screwThread.rotation.x = Math.PI / 2;
+      screwThread.position.y = 12.5;
+      screwThread.rotation.y = 0.31;
+
+      var secondThread = screwThread.clone();
+      secondThread.position.y = 11;
+
+      // create the hemisphere head on the screw
+      var screwheadGeo = new THREE.SphereGeometry(3, 32, 32, 0, 2*Math.PI, 0, 0.5*Math.PI);
+      var screwhead = new THREE.Mesh(screwheadGeo, screwMaterial);
+
+      // creating the black indent line on the screwhead, by shaping sphereGeo down with same radius
+      var screwlineGeo = new THREE.SphereGeometry(3, 32, 32, 0, 0.3);
+      var screwline = new THREE.Mesh(screwlineGeo, materialBlack);
+      screwline.position.y = 0.09;
+      screwline.rotation.z = -Math.PI/2;
+      screwline.rotation.x = -0.18;
+
+      var screwlineGeo2 = new THREE.SphereGeometry(3, 32, 32, 0, 0.3);
+      var screwline2 = new THREE.Mesh(screwlineGeo2, materialBlack);
+      screwline2.position.y = 0.09;
+      screwline2.rotation.y = 1.45;
+      screwline2.rotation.x = -Math.PI/2;
+
+      // grouping the screwhead components
+      var screwheadGroup = new THREE.Group();
+      screwheadGroup.add(screwhead);
+      screwheadGroup.add(screwline);
+      screwheadGroup.add(screwline2);
+      screwheadGroup.position.y = 13.2;
+
+      //grouping all the screw components together
+      var fullScrew = new THREE.Group();
+      fullScrew.add(screw);
+      fullScrew.add(screwThread);
+      fullScrew.add(secondThread);
+      fullScrew.add(screwheadGroup);
+
+      // creating 2 more screws for one magnemite, cloned from one above
+      var fullScrew2 = fullScrew.clone();
+      fullScrew2.rotation.x = Math.PI/1.5;
+      fullScrew2.rotation.z = Math.PI/4;
+
+      var fullScrew3 = fullScrew.clone();
+      fullScrew3.rotateX(Math.PI/1.5);
+      fullScrew3.rotateZ(-Math.PI/4);
+
+      // creating 2d shape of magnet
+      var shape = new THREE.Shape();
+      shape.moveTo(-1,1);
+      shape.absarc(0,0,1,Math.PI,Math.PI*2);
+      shape.lineTo(1,1);
+      shape.lineTo(0.35,1);
+      shape.absarc(0, 0, 0.35, Math.PI*2, Math.PI, true);
+      shape.lineTo(-0.35, 1);
+      shape.lineTo(-1, 1);
+
+      // extrude the shape created to give 3d magnet shape and scale to make correct size
+      var magnetGeo = new THREE.ExtrudeGeometry(shape, {curveSegments: 20, steps: 1, depth: 0.5, bevelEnabled: false});
+      var magnet = new THREE.Mesh(magnetGeo, screwMaterial);
+      magnet.scale.set(5,5,5);
+
+      // creating blue and red boxes for the ends of the magnet
+      var boxGeo = new THREE.BoxGeometry(3.25, 3, 2.5);
+      var blueMaterial = new THREE.MeshLambertMaterial({color: 0x187bcd});
+      var blueMagnet = new THREE.Mesh(boxGeo, blueMaterial);
+      blueMagnet.position.set(-3.37, 6.5, 1.25);
+
+      var redMagMaterial = new THREE.MeshLambertMaterial({color:0xBF0000});
+      var redMagnet = new THREE.Mesh(boxGeo, redMagMaterial);
+      redMagnet.position.set(3.37, 6.5, 1.25);
+
+      // grouping full magnet together
+      // i had this at the origin as a refernece point for the next two magnets which were added to scene
+      var fullMagnet = new THREE.Group();
+      fullMagnet.add(magnet);
+      fullMagnet.add(blueMagnet);
+      fullMagnet.add(redMagnet);
+      fullMagnet.position.y = 14;
+
+      // cloned 2 magnets, and added these magnets to scene.
+      var fullMagnet2 = fullMagnet.clone();
+      fullMagnet2.position.set(-11.8, 8, -1.25);
+      fullMagnet2.rotateZ(Math.PI/4);
+ 
+      var fullMagnet3 = fullMagnet.clone();
+      fullMagnet3.rotateY(Math.PI);
+      fullMagnet3.position.set(11.8, 8, 1.25);
+      fullMagnet3.rotateZ(Math.PI/4);
+
+      // grouping parts to create first magnemite, top and central 
+      var magnemite = new THREE.Group();
+      magnemite.add(metalBall);
+      magnemite.add(eyeball);
+      magnemite.add(pupil);
+      magnemite.add(fullScrew);
+      magnemite.add(fullScrew2);
+      magnemite.add(fullScrew3);
+      magnemite.add(fullMagnet2);
+      magnemite.add(fullMagnet3);
+
+      // cloning intial magnemite, placing in correct position, and rotating magnets to place in correct position
+      // children[5] and [6] are the magnets 
+      // children[4] is one screw, slighlty pushed in as they were touching
+      var magnemite2 = magnemite.clone();
+      magnemite2.remove(magnemite2.children[3]);
+      magnemite2.position.x = -13;
+      magnemite2.position.y = -14;;
+      magnemite2.rotateZ(0.58);
+      magnemite2.children[5].position.y = 12.5;
+      magnemite2.children[5].position.x = -7.5;
+      magnemite2.children[5].rotateZ(-0.2);
+      magnemite2.children[5].rotateY(Math.PI);
+      magnemite2.children[6].position.y = -13.8;
+      magnemite2.children[6].position.x = -2.8;
+      magnemite2.children[6].rotateZ(3.1);
+      magnemite2.children[6].rotateY(Math.PI);
+      magnemite2.children[4].position.x = -1; 
+
+      // creating right magnemite, placing in correct position, and rotating magnets to place in correct position
+      var magnemite3 = magnemite.clone();
+      magnemite3.remove(magnemite3.children[3]);
+      magnemite3.position.x = 13;
+      magnemite3.position.y = -14;
+      magnemite3.rotateZ(-0.58);
+      magnemite3.children[5].position.y = 12.5;
+      magnemite3.children[5].position.x = 7.5;
+      magnemite3.children[5].rotateZ(-1.3);
+      magnemite3.children[6].position.y = -14.2;
+      magnemite3.children[6].position.x = 2.8;
+      magnemite3.children[6].rotateZ(1.6);
+      magnemite3.children[3].position.x = 1; 
+
+      // grouping each magnemite together to create magneton
+      magneton = new THREE.Group();
+      magneton.add(magnemite);
+      magneton.add(magnemite2);
+      magneton.add(magnemite3);
+      magneton.position.y = -20;
+      scene.add(magneton);
+      magneton.scale.set(0.1,0.1,0.1);
+
+      // rendering scene and calling animation functions
+      renderer.render(scene, camera); 
+      openBall();
+      magnetonMove();
+      magnetonEmerge();
+      closeBall();
+      animate();
+    }
+
+    // starts after 1 seconds, loops through radians to rotate and open ball
+    function openBall(){
+      for(var i = 0; i < 0.06; i+=0.002){
+        setTimeout(function() {
+          pivot.rotateOnAxis(new THREE.Vector3(1,0,0), -i);
+          renderer.render(scene, camera); 
+        }, 1000);
+      }
+    }
+
+    // loops and closes the ball after 2.4 seconds
+    function closeBall(){
+      for(var i = 0; i < 0.06; i+=0.002){
+        setTimeout(function() {
+          pivot.rotateOnAxis(new THREE.Vector3(1,0,0), i);
+          renderer.render(scene, camera); 
+        }, 2400);
+      }
+    }
+
+    // moves magneton out of the ball by incrementing its y position
+    function magnetonMove(){
+      for(var i = 0; i<=1.5; i+=0.05){
+        setTimeout(function() {
+          magneton.position.y += i;
+          renderer.render(scene, camera); 
+        }, 1500);
+      }
+    }
+
+    // increases the size of magneton once it has moved out of ball
+    function magnetonEmerge(){
+      for(var i = 0; i<=0.26; i+=0.09){
+        setTimeout(function() {
+          magneton.scale.x += i 
+          magneton.scale.y += i
+          magneton.scale.z += i
+          renderer.render(scene, camera); 
+        }, 2000);
+      }
+    }
+
+    // animation function allows orbit controls to work
+    function animate() {
+      setTimeout(animate, 1000/60);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+  </script>
+ </head>
+ <body onload="draw();">
+   <canvas id="canvas" width="600" height="600"></canvas>
+ </body>
+</html>
